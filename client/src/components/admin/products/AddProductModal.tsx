@@ -3,21 +3,34 @@ import { ProductContext } from "./index";
 import { createProduct, getAllProduct } from "./FetchApi";
 import { getAllCategory } from "../categories/FetchApi";
 
-const AddProductDetail = ({ categories }) => {
+type ProductForm = {
+  pName: string;
+  pDescription: string;
+  pStatus: string;
+  pImage: FileList | null;
+  pCategory: string;
+  pPrice: number | "";
+  pOffer: number | "";
+  pQuantity: number | "";
+  success: boolean;
+  error: string;
+};
+
+const AddProductDetail = ({ categories }: any) => {
   const { data, dispatch } = useContext(ProductContext);
 
-  const alert = (msg, type) => (
+  const alert = (msg: string, type: string) => (
     <div className={`bg-${type}-200 py-2 px-4 w-full`}>{msg}</div>
   );
 
-  const [fData, setFdata] = useState({
+  const [fData, setFdata] = useState<ProductForm>({
     pName: "",
     pDescription: "",
     pStatus: "Active",
-    pImage: null, // Initial value will be null or empty array
+    pImage: null,
     pCategory: "",
     pPrice: "",
-    pOffer: 0,
+    pOffer: "",
     pQuantity: "",
     success: false,
     error: "",
@@ -25,268 +38,211 @@ const AddProductDetail = ({ categories }) => {
 
   const fetchData = async () => {
     let responseData = await getAllProduct();
-    setTimeout(() => {
-      if (responseData && responseData.Products) {
-        dispatch({
-          type: "fetchProductsAndChangeState",
-          payload: responseData.Products,
-        });
-      }
-    }, 1000);
+    if (responseData && responseData.Products) {
+      dispatch({
+        type: "fetchProductsAndChangeState",
+        payload: responseData.Products,
+      });
+    }
   };
 
-  const submitForm = async (e) => {
+  //SUBMIT 
+  const submitForm = async (e: any) => {
     e.preventDefault();
-    e.target.reset();
 
     if (!fData.pImage) {
-      setFdata({ ...fData, error: "Please upload at least 2 image" });
-      setTimeout(() => {
-        setFdata({ ...fData, error: "" });
-      }, 2000);
+      setFdata({ ...fData, error: "Please upload at least 2 images" });
+      return;
     }
 
     try {
-      let responseData = await createProduct(fData);
+      const payload = {
+        ...fData,
+        pPrice: Number(fData.pPrice),
+        pOffer: Number(fData.pOffer),
+        pQuantity: Number(fData.pQuantity),
+      };
+
+      let responseData = await createProduct(payload);
+
       if (responseData.success) {
         fetchData();
-        setFdata({ ...fData, success: responseData.success });
-      } else if (responseData.error) {
-        setFdata({ ...fData, success: false, error: responseData.error });
-        setTimeout(() => {
-          return setFdata({ ...fData, error: "", success: false });
-        }, 2000);
+
+        setFdata({
+          pName: "",
+          pDescription: "",
+          pStatus: "Active",
+          pImage: null,
+          pCategory: "",
+          pPrice: "",
+          pOffer: "",
+          pQuantity: "",
+          success: true,
+          error: "",
+        });
+      } else {
+        setFdata({ ...fData, error: responseData.error || "Error" });
       }
     } catch (error) {
       console.log(error);
     }
   };
 
+  //UI
   return (
     <Fragment>
-      {/* Black Overlay */}
+      {/* Overlay */}
       <div
-        onClick={(e) => dispatch({ type: "addProductModal", payload: false })}
+        onClick={() =>
+          dispatch({ type: "addProductModal", payload: false })
+        }
         className={`${
           data.addProductModal ? "" : "hidden"
         } fixed top-0 left-0 z-30 w-full h-full bg-black opacity-50`}
       />
-      {/* End Black Overlay */}
 
-      {/* Modal Start */}
+      {/* Modal */}
       <div
         className={`${
           data.addProductModal ? "" : "hidden"
         } fixed inset-0 flex items-center z-30 justify-center`}
       >
         <div className="h-full overflow-auto mt-32 md:mt-0 relative bg-white w-11/12 md:w-3/6 shadow-lg flex flex-col items-center space-y-4 px-4 py-4 md:px-8">
+          
           <div className="flex items-center justify-between w-full pt-4">
-            <span className="text-left font-semibold text-2xl tracking-wider">
-              Add Product
-            </span>
-            {/* Close Modal */}
+            <span className="font-semibold text-2xl">Add Product</span>
             <span
-              style={{ background: "#303031" }}
-              onClick={(e) =>
+              onClick={() =>
                 dispatch({ type: "addProductModal", payload: false })
               }
-              className="cursor-pointer text-gray-100 py-2 px-2 rounded-full"
+              className="cursor-pointer text-white bg-gray-800 p-2 rounded-full"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              ✕
             </span>
           </div>
-          {fData.error ? alert(fData.error, "red") : ""}
-          {fData.success ? alert(fData.success, "green") : ""}
-          <form className="w-full" onSubmit={(e) => submitForm(e)}>
-            <div className="flex space-x-1 py-4">
-              <div className="w-1/2 flex flex-col space-y-1 space-x-1">
-                <label htmlFor="name">Product Name *</label>
-                <input
-                  value={fData.pName}
-                  onChange={(e) =>
-                    setFdata({
-                      ...fData,
-                      error: "",
-                      success: false,
-                      pName: e.target.value,
-                    })
-                  }
-                  className="px-4 py-2 border focus:outline-none"
-                  type="text"
-                />
-              </div>
-              <div className="w-1/2 flex flex-col space-y-1 space-x-1">
-                <label htmlFor="price">Product Price *</label>
-                <input
-                  value={fData.pPrice}
-                  onChange={(e) =>
-                    setFdata({
-                      ...fData,
-                      error: "",
-                      success: false,
-                      pPrice: e.target.value,
-                    })
-                  }
-                  type="number"
-                  className="px-4 py-2 border focus:outline-none"
-                  id="price"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col space-y-2">
-              <label htmlFor="description">Product Description *</label>
-              <textarea
-                value={fData.pDescription}
-                onChange={(e) =>
-                  setFdata({
-                    ...fData,
-                    error: "",
-                    success: false,
-                    pDescription: e.target.value,
-                  })
-                }
-                className="px-4 py-2 border focus:outline-none"
-                name="description"
-                id="description"
-                cols={5}
-                rows={2}
-              />
-            </div>
-            {/* Most Important part for uploading multiple image */}
-            <div className="flex flex-col mt-4">
-              <label htmlFor="image">Product Images *</label>
-              <span className="text-gray-600 text-xs">Must need 2 images</span>
+
+          {fData.error && alert(fData.error, "red")}
+          {fData.success && alert("Created successfully", "green")}
+
+          <form className="w-full" onSubmit={submitForm}>
+            
+            <div className="flex space-x-2 py-4">
               <input
+                value={fData.pName}
+                onChange={(e) =>
+                  setFdata({ ...fData, pName: e.target.value, error: "" })
+                }
+                placeholder="Product Name"
+                className="w-1/2 px-4 py-2 border"
+              />
+
+              <input
+                value={fData.pPrice}
                 onChange={(e) =>
                   setFdata({
                     ...fData,
-                    error: "",
-                    success: false,
-                    pImage: e.target.files ? e.target.files[0] : null,
+                    pPrice:
+                      e.target.value === ""
+                        ? ""
+                        : Number(e.target.value),
                   })
                 }
-                type="file"
-                accept=".jpg, .jpeg, .png"
-                className="px-4 py-2 border focus:outline-none"
-                id="image"
-                multiple
+                type="number"
+                placeholder="Price"
+                className="w-1/2 px-4 py-2 border"
               />
             </div>
-            {/* Most Important part for uploading multiple image */}
-            <div className="flex space-x-1 py-4">
-              <div className="w-1/2 flex flex-col space-y-1">
-                <label htmlFor="status">Product Status *</label>
-                <select
-                  value={fData.pStatus}
-                  onChange={(e) =>
-                    setFdata({
-                      ...fData,
-                      error: "",
-                      success: false,
-                      pStatus: e.target.value,
-                    })
-                  }
-                  name="status"
-                  className="px-4 py-2 border focus:outline-none"
-                  id="status"
-                >
-                  <option value="Active">
-                    Active
-                  </option>
-                  <option value="Disabled">
-                    Disabled
-                  </option>
-                </select>
-              </div>
-              <div className="w-1/2 flex flex-col space-y-1">
-                <label htmlFor="status">Product Category *</label>
-                <select
-                  value={fData.pCategory}
-                  onChange={(e) =>
-                    setFdata({
-                      ...fData,
-                      error: "",
-                      success: false,
-                      pCategory: e.target.value,
-                    })
-                  }
-                  name="status"
-                  className="px-4 py-2 border focus:outline-none"
-                  id="status"
-                >
-                  <option disabled value="">
-                    Select a category
-                  </option>
-                  {categories.length > 0
-                    ? categories.map(function (elem: any) {
-                        return (
-                          <option value={elem._id} key={elem._id}>
-                            {elem.cName}
-                          </option>
-                        );
-                      })
-                    : ""}
-                </select>
-              </div>
-            </div>
-            <div className="flex space-x-1 py-4">
-              <div className="w-1/2 flex flex-col space-y-1">
-                <label htmlFor="quantity">Product in Stock *</label>
-                <input
-                  value={fData.pQuantity}
-                  onChange={(e) =>
-                    setFdata({
-                      ...fData,
-                      error: "",
-                      success: false,
-                      pQuantity: e.target.value,
-                    })
-                  }
-                  type="number"
-                  className="px-4 py-2 border focus:outline-none"
-                  id="quantity"
-                />
-              </div>
-              <div className="w-1/2 flex flex-col space-y-1">
-                <label htmlFor="offer">Product Offfer (%) *</label>
-                <input
-                  value={fData.pOffer}
-                  onChange={(e) =>
-                    setFdata({
-                      ...fData,
-                      error: "",
-                      success: false,
-                      pOffer: Number(e.target.value),
-                    })
-                  }
-                  type="number"
-                  className="px-4 py-2 border focus:outline-none"
-                  id="offer"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col space-y-1 w-full pb-4 md:pb-6 mt-4">
-              <button
-                style={{ background: "#303031" }}
-                type="submit"
-                className="rounded-full bg-gray-800 text-gray-100 text-lg font-medium py-2"
+
+            <textarea
+              value={fData.pDescription}
+              onChange={(e) =>
+                setFdata({ ...fData, pDescription: e.target.value })
+              }
+              className="w-full px-4 py-2 border"
+              placeholder="Description"
+            />
+
+            <input
+              type="file"
+              multiple
+              onChange={(e) =>
+                setFdata({
+                  ...fData,
+                  pImage: e.target.files,
+                })
+              }
+              className="mt-4"
+            />
+
+            <div className="flex space-x-2 py-4">
+              <select
+                value={fData.pStatus}
+                onChange={(e) =>
+                  setFdata({ ...fData, pStatus: e.target.value })
+                }
+                className="w-1/2 border px-2"
               >
-                Create product
-              </button>
+                <option value="Active">Active</option>
+                <option value="Disabled">Disabled</option>
+              </select>
+
+              <select
+                value={fData.pCategory}
+                onChange={(e) =>
+                  setFdata({ ...fData, pCategory: e.target.value })
+                }
+                className="w-1/2 border px-2"
+              >
+                <option value="">Select category</option>
+                {Array.isArray(categories) &&
+                  categories.map((c: any) => (
+                    <option key={c._id} value={c._id}>
+                      {c.cName}
+                    </option>
+                  ))}
+              </select>
             </div>
+
+            <div className="flex space-x-2 py-4">
+              <input
+                value={fData.pQuantity}
+                onChange={(e) =>
+                  setFdata({
+                    ...fData,
+                    pQuantity:
+                      e.target.value === ""
+                        ? ""
+                        : Number(e.target.value),
+                  })
+                }
+                type="number"
+                placeholder="Stock"
+                className="w-1/2 border px-2"
+              />
+
+              <input
+                value={fData.pOffer}
+                onChange={(e) =>
+                  setFdata({
+                    ...fData,
+                    pOffer:
+                      e.target.value === ""
+                        ? ""
+                        : Number(e.target.value),
+                  })
+                }
+                type="number"
+                placeholder="Offer %"
+                className="w-1/2 border px-2"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-gray-800 text-white py-2 rounded"
+            >
+              Create product
+            </button>
           </form>
         </div>
       </div>
@@ -294,17 +250,18 @@ const AddProductDetail = ({ categories }) => {
   );
 };
 
-const AddProductModal = (props) => {
+// MODAL
+const AddProductModal = () => {
+  const [allCat, setAllCat] = useState<any[]>([]);
+
   useEffect(() => {
     fetchCategoryData();
   }, []);
 
-  const [allCat, setAllCat] = useState({});
-
   const fetchCategoryData = async () => {
-    let responseData = await getAllCategory();
-    if (responseData.Categories) {
-      setAllCat(responseData.Categories);
+    let res = await getAllCategory();
+    if (res.Categories) {
+      setAllCat(res.Categories);
     }
   };
 
@@ -316,4 +273,3 @@ const AddProductModal = (props) => {
 };
 
 export default AddProductModal;
-
