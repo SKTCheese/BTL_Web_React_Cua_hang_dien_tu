@@ -8,6 +8,14 @@ import { subTotal, quantity, totalCost } from "./Mixins";
 
 const apiURL = "http://localhost:8000";
 
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  pImages?: Array<{ img: string }>;
+  quantity?: number;
+}
+
 const CartModal = () => {
   const history = useHistory();
 
