@@ -42,3 +42,47 @@ const CartModal = () => {
       console.log(error);
     }
   };
+
+    const updateQuantity = (
+    productId: string,
+    type: "increase" | "decrease"
+  ) => {
+    let cart = cartList();
+
+    const updatedCart = cart.map((item: any) => {
+      if (item.id === productId || item._id === productId) {
+        let newQty = item.quantitiy || item.quantity || 1;
+
+        if (type === "increase") {
+          newQty += 1;
+        } else if (type === "decrease" && newQty > 1) {
+          newQty -= 1;
+        }
+
+        return {
+          ...item,
+          quantitiy: newQty,
+          quantity: newQty,
+        };
+      }
+      return item;
+    });
+
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    fetchData();
+  };
+
+  const removeProduct = (productId: string) => {
+    let cart = cartList();
+
+    const updatedCart = cart.filter(
+      (item: any) => item.id !== productId && item._id !== productId
+    );
+
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+
+    dispatch({ type: "cartProduct", payload: [] });
+    dispatch({ type: "cartTotalCost", payload: totalCost() });
+
+    fetchData();
+  };
