@@ -8,9 +8,9 @@ export const Alert = (color, text) => (
 
 export const reviewSubmitHanlder = (fData, setFdata, fetchData) => {
   if (!fData.rating || !fData.review) {
-    setFdata({ ...fData, error: "Rating and review must be required" });
+    setFdata({ ...fData, error: "Việc đánh giá và nhận xét là bắt buộc." });
   } else if (!isAuthenticate()) {
-    setFdata({ ...fData, error: "You must need login to review" });
+    setFdata({ ...fData, error: "Bạn phải đăng nhập để đánh giá sản phẩm." });
   } else {
     addReview(fData, setFdata, fetchData);
   }
@@ -31,6 +31,32 @@ export const deleteReview = async (
       fetchData();
       setFdata({ success: responseData.success });
     } else if (responseData.error) {
+      fetchData();
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const addReview = async (fData, setFdata, fetchData) => {
+  let formData = {
+    rating: fData.rating,
+    review: fData.review,
+    pId: fData.pId,
+    uId: JSON.parse(localStorage.getItem("jwt")).user._id,
+  };
+  try {
+    let responseData = await postAddReview(formData);
+    if (responseData.success) {
+      setFdata({
+        ...fData,
+        success: responseData.success,
+        review: "",
+        rating: "",
+      });
+      fetchData();
+    } else if (responseData.error) {
+      setFdata({ ...fData, error: responseData.error, review: "", rating: "" });
       fetchData();
     }
   } catch (error) {
